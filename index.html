@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advem Artes | Galeria de Arte</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap');
+
+        :root {
+            --primary: #000000;
+            --secondary: #f5f5f5;
+            --accent: #00bcd4;
+            --accent-dark: #0097a7;
+            --text: #333333;
+            --light-bg: #f9f9f9;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text);
+            background-color: var(--secondary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+
+        .loading::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent);
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error {
+            background-color: #ffe6e6;
+            color: #d32f2f;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Success Message */
+        .success {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Header Styles */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+            padding: 20px 0;
+            transition: var(--transition);
+        }
+
+        header.scrolled {
+            padding: 12px 0;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+            margin-left: 10px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: var(--accent);
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--accent);
+        }
+
+        .nav-links a:hover::after, .nav-links a.active::after {
+            width: 100%;
+        }
+
+        .menu-toggle {
+            display: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        /* Page Styles */
+        .page {
+            display: none;
+            min-height: 100vh;
+            padding-top: 100px;
+            padding-bottom: 50px;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 85vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent-dark) 100%);
+            color: white;
+            margin-bottom: 80px;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            color: white;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 188, 212, 0.4)), url('https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.7);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: var(--accent);
+            color: white;
+            border-radius: 4px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 188, 212, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Section Title */
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            display: inline-block;
+        }
+
+        .section-title h2::after {
+            content: '';
+            display: block;
+            width: 70px;
+            height: 3px;
+            background-color: var(--accent);
+            margin: 15px auto 0;
+        }
+
+        /* Gallery Filter */
+        .gallery-filter {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background-color: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            height: 350px;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 188, 212, 0.2);
+        }
+
+        .gallery-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .gallery-item:hover .gallery-img {
+            transform: scale(1.05);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            color: white;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .gallery-overlay h3 {
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+
+        .gallery-overlay p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .load-more {
+            display: block;
+            margin: 30px auto;
+        }
+
+        /* Workshop Section */
+        .workshop-intro {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: white;
+            padding: 60px 0;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        .workshop-intro h2 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .workshop-intro p {
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+
+        .workshop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .workshop-item {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+
+        .workshop-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 188, 212, 0.15);
+        }
+
+        .workshop-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .workshop-content {
+            padding: 25px;
+        }
+
+        .workshop-status {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: var(--accent);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        .workshop-title {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .workshop-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .workshop-progress {
+            margin-top: 20px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 80%;
+            max-height: 80vh;
+        }
+
+        .modal-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+        }
+
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            transform: translateY(-50%);
+            padding: 0 30px;
+        }
+
+        .modal-nav-btn {
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-nav-btn:hover {
+            transform: scale(1.2);
+            color: var(--accent);
+        }
+
+        /* About Section */
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .about-img {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            height: 500px;
+        }
+
+        .about-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .about-img:hover img {
+            transform: scale(1.05);
+        }
+
+        .about-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .about-text h2::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            width: 70px;
+            height: 3px;
+            background-color: var(--accent);
+        }
+
+        .about-text p {
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .stat-text {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Contact Section */
+        .contact-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+        }
+
+        .contact-info {
+            padding-right: 30px;
+        }
+
+        .contact-info h2 {
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .contact-info h2::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            width: 70px;
+            height: 3px;
+            background-color: var(--accent);
+        }
+
+        .contact-info p {
+            margin-bottom: 30px;
+            font-size: 1.05rem;
+        }
+
+        .contact-details {
+            margin-top: 40px;
+        }
+
+        .contact-item {
+            display: flex;
+            margin-bottom: 25px;
+            align-items: flex-start;
+        }
+
+        .contact-icon {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-right: 15px;
+            margin-top: 5px;
+        }
+
+        .contact-text h4 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .contact-text p {
+            margin-bottom: 0;
+            font-size: 1rem;
+        }
+
+        .contact-form {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary);
+            color: white;
+            padding: 60px 0 30px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .footer-logo h2 {
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .footer-logo span {
+            color: var(--accent);
+        }
+
+        .footer-logo p {
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: var(--transition);
+        }
+
+        .social-link:hover {
+            background-color: var(--accent);
+            transform: translateY(-3px);
+        }
+
+        .footer-title {
+            font-size: 1.2rem;
+            color: white;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .footer-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 40px;
+            height: 2px;
+            background-color: var(--accent);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 15px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+            padding-left: 5px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .about-content,
+            .contact-container,
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .about-img {
+                height: 400px;
+                order: -1;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .workshop-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                position: fixed;
+                top: 80px;
+                left: 0;
+                width: 100%;
+                flex-direction: column;
+                align-items: center;
+                background-color: white;
+                padding: 30px 0;
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+                transform: translateY(-150%);
+                transition: var(--transition);
+                gap: 20px;
+                z-index: 999;
+            }
+
+            .nav-links.active {
+                transform: translateY(0);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .gallery-grid,
+            .workshop-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .about-text h2,
+            .contact-info h2 {
+                font-size: 1.8rem;
+            }
+
+            .contact-form {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-container">
+            <div class="logo">
+                <h1>Advem <span>Artes</span></h1>
+            </div>
+            <nav>
+                <div class="menu-toggle" id="menuToggle">
+                    <i class="ri-menu-line"></i>
+                </div>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="#" class="nav-link active" data-page="home">Início</a></li>
+                    <li><a href="#" class="nav-link" data-page="gallery">Galeria</a></li>
+                    <li><a href="#" class="nav-link" data-page="workshop">Oficina de Criação</a></li>
+                    <li><a href="#" class="nav-link" data-page="about">Sobre</a></li>
+                    <li><a href="#" class="nav-link" data-page="contact">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Home Page -->
+    <div class="page active" id="home">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-bg"></div>
+            <div class="hero-content">
+                <h1>Bem-vindo à Galeria Advem Artes</h1>
+                <p>Explore a expressão artística contemporânea que celebra a cultura moçambicana</p>
+                <a href="#" class="btn" id="exploreBtn">Explorar Galeria</a>
+            </div>
+        </section>
+
+        <!-- Featured Works -->
+        <section class="container">
+            <div class="section-title">
+                <h2>Obras em Destaque</h2>
+            </div>
+            <div id="homeFeaturedLoading" class="loading">A carregar obras em destaque...</div>
+            <div id="homeFeaturedError" class="error" style="display: none;"></div>
+            <div class="gallery-grid" id="homeFeaturedGallery">
+                <!-- A galeria será preenchida com JavaScript -->
+            </div>
+            <a href="#" class="btn load-more" id="viewAllBtn">Ver Todas as Obras</a>
+        </section>
+    </div>
+
+    <!-- Gallery Page -->
+    <div class="page" id="gallery">
+        <div class="container">
+            <div class="section-title">
+                <h2>Galeria de Obras</h2>
+            </div>
+            <div class="gallery-filter">
+                <button class="filter-btn active" data-filter="all">Todas</button>
+                <button class="filter-btn" data-filter="pintura">Pintura</button>
+                <button class="filter-btn" data-filter="desenho">Desenho</button>
+            </div>
+            <div id="galleryLoading" class="loading">A carregar galeria...</div>
+            <div id="galleryError" class="error" style="display: none;"></div>
+            <div class="gallery-grid" id="fullGallery">
+                <!-- A galeria completa será preenchida com JavaScript -->
+            </div>
+            <button class="btn load-more" id="loadMoreBtn">Carregar Mais</button>
+        </div>
+    </div>
+
+    <!-- Workshop Page -->
+    <div class="page" id="workshop">
+        <div class="workshop-intro">
+            <div class="container">
+                <h2>Oficina de Criação</h2>
+                <p>Acompanhe o processo criativo por trás das obras de Advem Artes. Aqui você pode ver projetos em desenvolvimento, desde os primeiros esboços até as etapas finais de criação.</p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div id="workshopLoading" class="loading">A carregar oficina de criação...</div>
+            <div id="workshopError" class="error" style="display: none;"></div>
+            <div class="workshop-grid" id="workshopGrid">
+                <!-- Obras em andamento serão carregadas aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- About Page -->
+    <div class="page" id="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>Sobre Advem Artes</h2>
+                    <p>Advem Artes é um artista moçambicano renomado, nascido e criado em Quelimane, que expressa as complexidades da experiência humana através de uma linguagem visual única.</p>
+                    <p>Baseado no bairro 1 de Maio, seu trabalho é profundamente influenciado pela rica cultura moçambicana, tradições ancestrais, e paisagens naturais de sua cidade natal.</p>
+                    <p>Com formação na Escola Nacional de Artes Visuais de Maputo, Advem tem desenvolvido uma técnica distintiva que combina elementos tradicionais africanos com abordagens contemporâneas, criando obras que ressoam tanto localmente quanto internacionalmente.</p>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-num">15+</div>
+                            <div class="stat-text">Anos de Experiência</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-num">120+</div>
+                            <div class="stat-text">Obras Criadas</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-num">30+</div>
+                            <div class="stat-text">Exposições</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-img">
+                    <img src="https://images.unsplash.com/photo-1621886292650-520f76c747d6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="Advem Artes no estúdio">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Page -->
+    <div class="page" id="contact">
+        <div class="container">
+            <div class="contact-container">
+                <div class="contact-info">
+                    <h2>Entre em Contacto</h2>
+                    <p>Interessado em adquirir uma obra ou agendar uma visita ao estúdio? Entre em contacto connosco através dos canais abaixo ou preencha o formulário.</p>
+                    <div class="contact-details">
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ri-map-pin-line"></i>
+                            </div>
+                            <div class="contact-text">
+                                <h4>Localização</h4>
+                                <p>Bairro 1 de Maio, Quelimane, Moçambique</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ri-phone-line"></i>
+                            </div>
+                            <div class="contact-text">
+                                <h4>Telefone</h4>
+                                <p>+258 84 123 4567</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ri-mail-line"></i>
+                            </div>
+                            <div class="contact-text">
+                                <h4>Email</h4>
+                                <p>contacto@advemart.co.mz</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ri-time-line"></i>
+                            </div>
+                            <div class="contact-text">
+                                <h4>Horário</h4>
+                                <p>Segunda a Sexta: 9h - 17h<br>Sábado: 10h - 14h</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-form">
+                    <div id="contactMessage" style="display: none;"></div>
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <label for="name">Nome Completo</label>
+                            <input type="text" id="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Telefone</label>
+                            <input type="tel" id="phone" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Assunto</label>
+                            <input type="text" id="subject" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Mensagem</label>
+                            <textarea id="message" class="form-control" required></textarea>
+                        </div>
+                        <button type="submit" class="btn" id="submitBtn">Enviar Mensagem</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <span class="modal-close" id="modalClose"><i class="ri-close-line"></i></span>
+            <img src="" alt="" class="modal-img" id="modalImg">
+            <div class="modal-nav">
+                <span class="modal-nav-btn" id="prevBtn"><i class="ri-arrow-left-s-line"></i></span>
+                <span class="modal-nav-btn" id="nextBtn"><i class="ri-arrow-right-s-line"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h2>Advem <span>Artes</span></h2>
+                    <p>Expressão artística contemporânea que celebra a cultura moçambicana através de formas, cores e texturas inspiradas nas tradições locais.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="ri-facebook-fill"></i></a>
+                        <a href="#" class="social-link"><i class="ri-instagram-line"></i></a>
+                        <a href="#" class="social-link"><i class="ri-twitter-fill"></i></a>
+                        <a href="#" class="social-link"><i class="ri-pinterest-fill"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links-container">
+                    <h3 class="footer-title">Links Rápidos</h3>
+                    <ul class="footer-links">
+                        <li><a href="#" data-page="home">Início</a></li>
+                        <li><a href="#" data-page="gallery">Galeria</a></li>
+                        <li><a href="#" data-page="workshop">Oficina de Criação</a></li>
+                        <li><a href="#" data-page="about">Sobre</a></li>
+                        <li><a href="#" data-page="contact">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links-container">
+                    <h3 class="footer-title">Serviços</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Compra de Obras</a></li>
+                        <li><a href="#">Encomendas Personalizadas</a></li>
+                        <li><a href="#">Visitas ao Estúdio</a></li>
+                        <li><a href="#">Workshops de Arte</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links-container">
+                    <h3 class="footer-title">Contacto</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Bairro 1 de Maio, Quelimane</a></li>
+                        <li><a href="#">+258 84 123 4567</a></li>
+                        <li><a href="#">contacto@advemart.co.mz</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Advem Artes. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // CONFIGURAÇÃO DO SUPABASE
+        // SUBSTITUA ESTAS CREDENCIAIS PELAS SUAS
+        const SUPABASE_URL = 'https://qzbwdkfjptnbpspmthnj.supabase.co'; // Ex: https://xxxxxxxxxxx.supabase.co
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6Yndka2ZqcHRuYnBzcG10aG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4Nzc5NzIsImV4cCI6MjA2NTQ1Mzk3Mn0.9GRC8On3f6c6OiwGqRncc5BPjuaW6zajqazJJVgSTIs'; // Sua chave anônima do Supabase
+
+        // Inicializar Supabase
+        let supabase;
+        try {
+            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase conectado com sucesso!');
+            } else {
+                console.warn('Configure as credenciais do Supabase para ativar a integração com a base de dados.');
+            }
+        } catch (error) {
+            console.error('Erro ao conectar com Supabase:', error);
+        }
+
+        // Dados estáticos de fallback (para quando o Supabase não estiver configurado)
+        const fallbackArtworksData = [
+            {
+                id: 1,
+                title: "Sonhos de Zambézia",
+                category: "pintura",
+                year: 2022,
+                description: "Acrílica sobre tela explorando as paisagens da Zambézia com cores vibrantes.",
+                image_url: "https://images.unsplash.com/photo-1578926288207-32356a2b802c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: true,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 2,
+                title: "Retratos da Manhã",
+                category: "desenho",
+                year: 2023,
+                description: "Série de desenhos a carvão capturando rostos e expressões do cotidiano quelimense.",
+                image_url: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: true,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 3,
+                title: "Paisagens do Licungo",
+                category: "pintura",
+                year: 2023,
+                description: "Óleo sobre tela retratando as margens do Rio Licungo em diferentes momentos do dia.",
+                image_url: "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: true,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 4,
+                title: "Harmonia Costeira",
+                category: "pintura",
+                year: 2020,
+                description: "Aquarela sobre papel retratando a costa de Moçambique em estilo impressionista.",
+                image_url: "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: false,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 5,
+                title: "Esboços do Mercado",
+                category: "desenho",
+                year: 2021,
+                description: "Desenhos a lápis documentando a vida no mercado central de Quelimane.",
+                image_url: "https://images.unsplash.com/photo-1576528627878-c89df24f2a34?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: true,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 6,
+                title: "Cores da Tarde",
+                category: "pintura",
+                year: 2023,
+                description: "Técnica mista sobre tela explorando os tons dourados das tardes moçambicanas.",
+                image_url: "https://images.unsplash.com/photo-1573096108468-702f6014ef28?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: false,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 7,
+                title: "Estudos de Luz e Sombra",
+                category: "desenho",
+                year: 2022,
+                description: "Série de estudos em grafite explorando jogos de luz nas ruas de Quelimane.",
+                image_url: "https://images.unsplash.com/photo-1548094891-c4ba474efd16?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: false,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 8,
+                title: "Confluências",
+                category: "pintura",
+                year: 2023,
+                description: "Acrílica sobre tela explorando a fusão de influências culturais.",
+                image_url: "https://images.unsplash.com/photo-1544273677-c433136021d4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                featured: true,
+                created_at: new Date().toISOString()
+            }
+        ];
+
+        const fallbackWorkshopData = [
+            {
+                id: 1,
+                title: "Reflexos do Licungo",
+                category: "pintura",
+                year: 2024,
+                description: "Nova série de pinturas capturando os reflexos e movimentos do Rio Licungo durante diferentes momentos do dia.",
+                image_url: "https://images.unsplash.com/photo-1549277513-6fd79e6ec5dd?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                status: "Em Progresso",
+                progress: 65,
+                stage: "Aplicação de cores finais",
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 2,
+                title: "Rostos de Quelimane",
+                category: "desenho",
+                year: 2024,
+                description: "Série de retratos a carvão documentando a diversidade de rostos e expressões da cidade.",
+                image_url: "https://images.unsplash.com/photo-1569091791842-7cfb64e04797?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                status: "Planejamento",
+                progress: 25,
+                stage: "Estudos preliminares",
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 3,
+                title: "Texturas da Cidade",
+                category: "desenho",
+                year: 2024,
+                description: "Projeto explorando as texturas e contrastes arquitetónicos de Quelimane através do desenho.",
+                image_url: "https://images.unsplash.com/photo-1506863530036-1efeddceb993?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                status: "Captação",
+                progress: 80,
+                stage: "Finalização dos esboços",
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 4,
+                title: "Memórias em Aquarela",
+                category: "pintura",
+                year: 2024,
+                description: "Obra em aquarela explorando as memórias e tradições culturais de Moçambique.",
+                image_url: "https://images.unsplash.com/photo-1569172122301-bc5008bc09c5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                status: "Desenvolvimento",
+                progress: 45,
+                stage: "Aplicação de detalhes",
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 5,
+                title: "Cores da Manhã",
+                category: "pintura",
+                year: 2024,
+                description: "Série de aquarelas capturando os tons dourados das manhãs de Quelimane.",
+                image_url: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                status: "Finalização",
+                progress: 90,
+                stage: "Últimos detalhes",
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 6,
+                title: "Anatomia da Luz",
+                category: "desenho",
+                year: 2024,
+                description: "Estudos anatómicos em grafite explorando como a luz modela as formas.",
+                image_url: "https://images.unsplash.com/photo-1576528627878-c89df24f2a34?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80",
+                status: "Conceptualização",
+                progress: 15,
+                stage: "Pesquisa e estudos",
+                created_at: new Date().toISOString()
+            }
+        ];
+
+        // DOM Elements
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+        const navLinksList = document.querySelectorAll('.nav-link');
+        const pages = document.querySelectorAll('.page');
+        const exploreBtn = document.getElementById('exploreBtn');
+        const viewAllBtn = document.getElementById('viewAllBtn');
+        const homeFeaturedGallery = document.getElementById('homeFeaturedGallery');
+        const fullGallery = document.getElementById('fullGallery');
+        const workshopGrid = document.getElementById('workshopGrid');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalClose = document.getElementById('modalClose');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const contactForm = document.getElementById('contactForm');
+        const footerLinks = document.querySelectorAll('.footer-links a[data-page]');
+
+        // Loading and error elements
+        const homeFeaturedLoading = document.getElementById('homeFeaturedLoading');
+        const homeFeaturedError = document.getElementById('homeFeaturedError');
+        const galleryLoading = document.getElementById('galleryLoading');
+        const galleryError = document.getElementById('galleryError');
+        const workshopLoading = document.getElementById('workshopLoading');
+        const workshopError = document.getElementById('workshopError');
+        const contactMessage = document.getElementById('contactMessage');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // State
+        let currentPage = 'home';
+        let currentCategory = 'all';
+        let visibleItems = 6;
+        let currentModalIndex = 0;
+        let filteredArtworks = [];
+        let allArtworks = [];
+        let allWorkshopProjects = [];
+
+        // FUNÇÕES DO SUPABASE
+
+        // Carregar obras da base de dados
+        async function loadArtworksFromDB() {
+            if (!supabase) {
+                return fallbackArtworksData;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('artworks')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Erro ao carregar obras:', error);
+                    return fallbackArtworksData;
+                }
+
+                return data || fallbackArtworksData;
+            } catch (error) {
+                console.error('Erro ao conectar com Supabase:', error);
+                return fallbackArtworksData;
+            }
+        }
+
+        // Carregar projetos da oficina da base de dados
+        async function loadWorkshopFromDB() {
+            if (!supabase) {
+                return fallbackWorkshopData;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('workshop_projects')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Erro ao carregar projetos da oficina:', error);
+                    return fallbackWorkshopData;
+                }
+
+                return data || fallbackWorkshopData;
+            } catch (error) {
+                console.error('Erro ao conectar com Supabase:', error);
+                return fallbackWorkshopData;
+            }
+        }
+
+        // Salvar mensagem de contacto
+        async function saveContactMessage(messageData) {
+            if (!supabase) {
+                // Simulação de envio bem-sucedido se o Supabase não estiver configurado
+                return { success: true };
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('contact_messages')
+                    .insert([messageData]);
+
+                if (error) {
+                    console.error('Erro ao salvar mensagem:', error);
+                    return { success: false, error: error.message };
+                }
+
+                return { success: true, data };
+            } catch (error) {
+                console.error('Erro ao conectar com Supabase:', error);
+                return { success: false, error: 'Erro de conexão' };
+            }
+        }
+
+        // FUNÇÕES DE INTERFACE
+
+        // Mostrar loading
+        function showLoading(loadingElement) {
+            loadingElement.style.display = 'block';
+        }
+
+        // Esconder loading
+        function hideLoading(loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+
+        // Mostrar erro
+        function showError(errorElement, message) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // Esconder erro
+        function hideError(errorElement) {
+            errorElement.style.display = 'none';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Carregar dados da base de dados
+            await loadAllData();
+            
+            // Header scroll effect
+            window.addEventListener('scroll', function() {
+                const header = document.querySelector('header');
+                if (window.scrollY > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            });
+        });
+
+        // Carregar todos os dados
+        async function loadAllData() {
+            try {
+                // Carregar obras
+                showLoading(homeFeaturedLoading);
+                showLoading(galleryLoading);
+                hideError(homeFeaturedError);
+                hideError(galleryError);
+
+                allArtworks = await loadArtworksFromDB();
+                filteredArtworks = [...allArtworks];
+                
+                // Carregar obras em destaque para a página inicial
+                const featuredWorks = allArtworks.filter(artwork => artwork.featured);
+                populateGallery(homeFeaturedGallery, featuredWorks);
+                hideLoading(homeFeaturedLoading);
+                
+                // Carregar galeria completa
+                populateGallery(fullGallery, allArtworks.slice(0, visibleItems));
+                checkLoadMoreButton();
+                hideLoading(galleryLoading);
+
+                // Carregar oficina
+                showLoading(workshopLoading);
+                hideError(workshopError);
+                
+                allWorkshopProjects = await loadWorkshopFromDB();
+                populateWorkshop(workshopGrid, allWorkshopProjects);
+                hideLoading(workshopLoading);
+
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                
+                // Usar dados de fallback em caso de erro
+                hideLoading(homeFeaturedLoading);
+                hideLoading(galleryLoading);
+                hideLoading(workshopLoading);
+                
+                showError(homeFeaturedError, 'Erro ao carregar obras em destaque. A usar dados offline.');
+                showError(galleryError, 'Erro ao carregar galeria. A usar dados offline.');
+                showError(workshopError, 'Erro ao carregar oficina. A usar dados offline.');
+                
+                // Carregar dados de fallback
+                allArtworks = fallbackArtworksData;
+                filteredArtworks = [...allArtworks];
+                allWorkshopProjects = fallbackWorkshopData;
+                
+                const featuredWorks = allArtworks.filter(artwork => artwork.featured);
+                populateGallery(homeFeaturedGallery, featuredWorks);
+                populateGallery(fullGallery, allArtworks.slice(0, visibleItems));
+                populateWorkshop(workshopGrid, allWorkshopProjects);
+                checkLoadMoreButton();
+            }
+        }
+
+        // Navigation
+        menuToggle.addEventListener('click', function() {
+            navLinks.classList.toggle('active');
+            this.innerHTML = navLinks.classList.contains('active') ? 
+                '<i class="ri-close-line"></i>' : 
+                '<i class="ri-menu-line"></i>';
+        });
+
+        navLinksList.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const pageId = this.getAttribute('data-page');
+                changePage(pageId);
+                
+                // Close mobile menu if open
+                navLinks.classList.remove('active');
+                menuToggle.innerHTML = '<i class="ri-menu-line"></i>';
+            });
+        });
+
+        footerLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const pageId = this.getAttribute('data-page');
+                changePage(pageId);
+                window.scrollTo(0, 0);
+            });
+        });
+
+        exploreBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            changePage('gallery');
+        });
+
+        viewAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            changePage('gallery');
+        });
+
+        // Change Page Function
+        function changePage(pageId) {
+            currentPage = pageId;
+            
+            // Update active nav link
+            navLinksList.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-page') === pageId) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Show active page
+            pages.forEach(page => {
+                page.classList.remove('active');
+                if (page.id === pageId) {
+                    page.classList.add('active');
+                }
+            });
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        // Gallery Filtering
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filter = this.getAttribute('data-filter');
+                currentCategory = filter;
+                
+                // Update active filter button
+                filterBtns.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Filter artworks
+                filteredArtworks = filter === 'all' ? 
+                    [...allArtworks] : 
+                    allArtworks.filter(artwork => artwork.category === filter);
+                
+                // Reset visible items
+                visibleItems = 6;
+                
+                // Repopulate gallery
+                populateGallery(fullGallery, filteredArtworks.slice(0, visibleItems));
+                
+                // Check load more button
+                checkLoadMoreButton();
+            });
+        });
+
+        // Load More
+        loadMoreBtn.addEventListener('click', function() {
+            visibleItems += 6;
+            populateGallery(fullGallery, filteredArtworks.slice(0, visibleItems));
+            checkLoadMoreButton();
+        });
+
+        function checkLoadMoreButton() {
+            if (visibleItems >= filteredArtworks.length) {
+                loadMoreBtn.style.display = 'none';
+            } else {
+                loadMoreBtn.style.display = 'block';
+            }
+        }
+
+        // Populate Gallery
+        function populateGallery(container, artworks) {
+            container.innerHTML = '';
+            
+            artworks.forEach((artwork, index) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.setAttribute('data-index', index);
+                
+                // Usar image_url da base de dados ou image como fallback
+                const imageUrl = artwork.image_url || artwork.image;
+                
+                item.innerHTML = `
+                    <img src="${imageUrl}" alt="${artwork.title}" class="gallery-img" loading="lazy">
+                    <div class="gallery-overlay">
+                        <h3>${artwork.title}</h3>
+                        <p>${artwork.category.charAt(0).toUpperCase() + artwork.category.slice(1)} | ${artwork.year}</p>
+                    </div>
+                `;
+                
+                item.addEventListener('click', function() {
+                    openModal(artwork, filteredArtworks);
+                });
+                
+                container.appendChild(item);
+            });
+            
+            // Add animation delay
+            container.querySelectorAll('.gallery-item').forEach((item, index) => {
+                item.style.animationDelay = `${index * 0.1}s`;
+            });
+        }
+
+        // Populate Workshop
+        function populateWorkshop(container, works) {
+            container.innerHTML = '';
+            
+            works.forEach((work, index) => {
+                const item = document.createElement('div');
+                item.className = 'workshop-item';
+                
+                // Usar image_url da base de dados ou image como fallback
+                const imageUrl = work.image_url || work.image;
+                
+                item.innerHTML = `
+                    <img src="${imageUrl}" alt="${work.title}" class="workshop-img" loading="lazy">
+                    <div class="workshop-content">
+                        <div class="workshop-status">${work.status}</div>
+                        <h3 class="workshop-title">${work.title}</h3>
+                        <div class="workshop-meta">${work.category.charAt(0).toUpperCase() + work.category.slice(1)} | ${work.year}</div>
+                        <p>${work.description}</p>
+                        <div class="workshop-progress">
+                            <div class="progress-label">
+                                <span>Progresso</span>
+                                <span>${work.progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${work.progress}%"></div>
+                            </div>
+                            <small style="color: #666; margin-top: 8px; display: block;">${work.stage}</small>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        // Modal functionality
+        function openModal(artwork, artworksArray) {
+            modal.classList.add('active');
+            const imageUrl = artwork.image_url || artwork.image;
+            modalImg.src = imageUrl;
+            modalImg.alt = artwork.title;
+            
+            // Set current index for navigation
+            currentModalIndex = artworksArray.findIndex(item => item.id === artwork.id);
+            
+            // Disable scrolling
+            document.body.style.overflow = 'hidden';
+        }
+
+        modalClose.addEventListener('click', function() {
+            closeModal();
+        });
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Modal Navigation
+        prevBtn.addEventListener('click', function() {
+            currentModalIndex = (currentModalIndex - 1 + filteredArtworks.length) % filteredArtworks.length;
+            updateModal();
+        });
+
+        nextBtn.addEventListener('click', function() {
+            currentModalIndex = (currentModalIndex + 1) % filteredArtworks.length;
+            updateModal();
+        });
+
+        function updateModal() {
+            const artwork = filteredArtworks[currentModalIndex];
+            const imageUrl = artwork.image_url || artwork.image;
+            modalImg.src = imageUrl;
+            modalImg.alt = artwork.title;
+        }
+
+        // Contact Form
+        contactForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'A enviar...';
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value,
+                created_at: new Date().toISOString()
+            };
+            
+            try {
+                const result = await saveContactMessage(formData);
+                
+                if (result.success) {
+                    contactMessage.className = 'success';
+                    contactMessage.textContent = 'Mensagem enviada com sucesso! Entraremos em contacto em breve.';
+                    contactMessage.style.display = 'block';
+                    
+                    // Reset form
+                    this.reset();
+                } else {
+                    contactMessage.className = 'error';
+                    contactMessage.textContent = `Erro ao enviar mensagem: ${result.error}`;
+                    contactMessage.style.display = 'block';
+                }
+            } catch (error) {
+                contactMessage.className = 'error';
+                contactMessage.textContent = 'Erro inesperado ao enviar mensagem. Tente novamente.';
+                contactMessage.style.display = 'block';
+            }
+            
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Enviar Mensagem';
+            
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                contactMessage.style.display = 'none';
+            }, 5000);
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (modal.classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                } else if (e.key === 'ArrowLeft') {
+                    currentModalIndex = (currentModalIndex - 1 + filteredArtworks.length) % filteredArtworks.length;
+                    updateModal();
+                } else if (e.key === 'ArrowRight') {
+                    currentModalIndex = (currentModalIndex + 1) % filteredArtworks.length;
+                    updateModal();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
